@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Controller;
+
 use App\DTO\TaskDTO;
 use App\Entity\Task;
 use Doctrine\ORM\EntityManagerInterface;
@@ -12,7 +13,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 class TaskController extends AbstractController
 {
-    #[Route('/task', name: 'get_task', methods: ['GET'])]
+    #[Route('/task', name: 'get_tasks', methods: ['GET'])]
     public function index(): JsonResponse
     {
         return $this->json([
@@ -25,7 +26,11 @@ class TaskController extends AbstractController
     public function createTask(Request $request, EntityManagerInterface $entityManager, SerializerInterface $serializer): JsonResponse
     {
         $data = $request->getContent();
-        $taskDTO = $serializer->deserialize($data, TaskDTO::class, 'json'); // Assuming TaskDTO is used here
+        $taskDTO = $serializer->deserialize($data, TaskDTO::class, 'json');
+
+        if (!$taskDTO->userId || !$taskDTO->task || !$taskDTO->date) {
+            return $this->json(['message' => 'Invalid data'], JsonResponse::HTTP_BAD_REQUEST);
+        }
 
         $task = new Task();
         $task->setUserId($taskDTO->userId);
@@ -38,7 +43,7 @@ class TaskController extends AbstractController
         return $this->json($task, JsonResponse::HTTP_CREATED);
     }
 
-    #[Route('/task/{userId}', name: 'get_task', methods: ['GET'])]
+    #[Route('/task/{userId}', name: 'get_task_by_user_id', methods: ['GET'])]
     public function getTask(int $userId, EntityManagerInterface $entityManager): JsonResponse
     {
         $task = $entityManager->getRepository(Task::class)->findOneBy(['userId' => $userId]);
